@@ -87,6 +87,7 @@ class Data_Loader():
 	def next(self):
 		begin = self.pointer*self.batch_size
 		end = (self.pointer+1)*self.batch_size
+		self.pointer += 1
 		if end>=self.train_size:
 			self.pointer = 0
 			end = self.train_size
