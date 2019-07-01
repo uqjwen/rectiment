@@ -160,5 +160,14 @@ def dev(sess, model, dev_data):
 	f1score = f1_score(label, ypred, average='micro')
 	return acc, f1score
 
+def rmse(ytrue, ypred):
+	assert len(ytrue) == len(ypred)
+	mse = np.sum((ytrue-ypred)**2)/len(ytrue)
+	rmse = mse**0.5
+	return rmse
+
+	# (ytrue - ypred)**2/
+
+
 if __name__ == '__main__':
 	train()
