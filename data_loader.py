@@ -41,6 +41,8 @@ class Data_Loader():
 		# print(max(text_len), np.mean(text_len))
 		self.train_text_split()
 
+		self.shuffle()
+
 	def get_emb_mat(self):
 
 		emb_mat_file = './data/'+self.domain+'_emb_mat.npy'
@@ -79,8 +81,8 @@ class Data_Loader():
 			begin = 0 if i == 0 else idx[i-1]
 			end = index
 			for attr in attrs:
-				names[attr][begin:end]
-				setattr(self,sub_split+'_'+attr, names[attr][begin:end])
+				# names[attr][begin:end]
+				setattr(self,sub_split+'_'+attr, np.array(names[attr][begin:end]))
 		self.train_size = train_size
 	def reset_pointer(self):
 		self.pointer = 0
@@ -94,10 +96,25 @@ class Data_Loader():
 		# end = min(end,self.train_size)
 		return self.train_user[begin:end],\
 				self.train_item[begin:end],\
-				np.array(self.train_rate[begin:end])-1,\
+				self.train_rate[begin:end],\
 				self.train_p_text[begin:end]
 	def dev(self):
-		return self.dev_user, self.dev_item, np.array(self.dev_rate)-1,self.dev_p_text
+		return self.dev_user, self.dev_item, self.dev_rate,self.dev_p_text
+
+	def shuffle(self):
+		names = self.__dict__
+		attrs = ['user','item','rate']
+		pmtt = np.random.permutation(self.train_size)
+		for attr in attrs:
+			names['train_'+attr] = names['train_'+attr][pmtt]
+		split = ['train','dev','test']
+		for sp in split:
+			print(sp)
+			names[sp+'_rate'] = names[sp+'_rate']-1
+
+
+
+
 
 
 
