@@ -14,7 +14,7 @@ class Data_Loader():
 
 		self.batch_size = flags.batch_size
 
-		self.vec_file = '/media/wenjh/Ubuntu 16.0/Downloads/glove.6B/glove.6B.300d.txt'
+		self.vec_file = flags.data_dir+'/glove.6B.300d.txt'
 		self.embed_size = flags.embed_size
 		self.num_class = flags.num_class
 
