@@ -1,4 +1,4 @@
-#python3 train.py -base_model att_cnn -maxlen 100
+python3 train.py -base_model att_cnn -maxlen 100
 python3 train.py -base_model att_cnn -maxlen 200
 python3 train.py -base_model att_cnn -maxlen 300
 python3 train.py -base_model att_cnn -maxlen 400
