@@ -16,9 +16,9 @@ class Model(object):
 				 user_mean_freq,
 				 item_mean_freq,
 				 embedding_size,
-				 u_neighbor,
-				 p_neighbor,
-				 batch_size):
+				 u_neighbor=None,
+				 p_neighbor=None,
+				 batch_size=None):
 		
 		self.vocab_size = vocab_size
 		self.num_user = num_user
@@ -35,6 +35,8 @@ class Model(object):
 		# PLACEHOLDERS
 		self.inputs = tf.placeholder(tf.int32, shape=[self.batch_size, None])
 		self.input_len = tf.placeholder(tf.int32, shape=[self.batch_size])
+
+		# self.polarity = tf.placeholder(tf.float32, shape = [self.batch_size, None])
 		
 		self.users = tf.placeholder(tf.int32, shape=[self.batch_size, 1])
 		self.user_counts = tf.placeholder(tf.float32, shape=[self.batch_size, 1])
@@ -68,8 +70,7 @@ class Model(object):
 			h = encode
 
 
-
-		print("encode shape: ", encode.shape)
+		# print("encode shape: ", encode.shape)
 		# h = tf.reduce_max(encode, axis=1)
 
 		print("encode reduce_max: ", h.shape)
@@ -80,15 +81,15 @@ class Model(object):
 
 
 		ui_scores = self.get_user_item() ## actually it is logits
-		print('ui_scores shape: ', ui_scores.shape)
+		# ui_loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits = ui_scores, labels = self.targets)
+		# ui_loss = tf.reduce_mean(ui_loss)
 
 		scores += ui_scores
 		losses = tf.nn.softmax_cross_entropy_with_logits(logits=scores, labels=self.targets)
-		self.loss = tf.reduce_mean(losses)# + add_loss
+		self.loss = tf.reduce_mean(losses)#+ui_loss
 
 
 
-		# self.hcsc_scores, self.hcsc_loss = self.get_hcsc_loss(encode, embedding_size)
 
 
 
@@ -97,8 +98,17 @@ class Model(object):
 		
 		
 		self.predictions = tf.argmax(scores, 1)
-		self.updates = tf.train.AdadeltaOptimizer(1.0,0.95,1e-6).minimize(self.loss)		
+		self.updates = tf.train.AdadeltaOptimizer(1,0.95,1e-6).minimize(self.loss)		
 		self.updates = tf.train.AdamOptimizer(learning_rate = 0.001).minimize(self.loss)
+
+		# self.hcsc_scores, self.hcsc_loss = self.get_hcsc_loss(encode, embedding_size)
+		# self.predictions = tf.argmax(self.hcsc_scores, 1)
+		# # self.updates = tf.train.AdadeltaOptimizer(1,0.95,1e-6).minimize(self.loss)		
+		# self.updates = tf.train.AdamOptimizer(learning_rate = 0.001).minimize(self.hcsc_loss)
+
+
+
+
 		self.count = tf.cast(tf.equal(self.predictions, tf.argmax(self.targets, 1)), 'float')
 
 
@@ -198,7 +208,7 @@ class Model(object):
 		hcsc_scores = tf.nn.xw_plus_b(h, W0, b0)
 		
 		losses = tf.nn.softmax_cross_entropy_with_logits(logits=hcsc_scores, labels=self.targets)
-		hcsc_loss = tf.reduce_mean(losses)# + add_loss
+		hcsc_loss = tf.reduce_mean(losses) + add_loss
 		
 		# predictions = tf.argmax(scores, 1)
 		# self.predictions = predictions
@@ -241,6 +251,7 @@ class Model(object):
 
 		return attended, ret_weights
 
+
 	def get_att_cnn(self, inputs_): #batch_size, maxlen, embed_size
 		users = tf.nn.embedding_lookup(self.user_embedding, self.users)
 		items = tf.nn.embedding_lookup(self.item_embedding, self.items) #batch_size 1 embed_size
@@ -257,6 +268,9 @@ class Model(object):
 
 
 		weights = tf.keras.layers.Dense(1)(weights) #batch_size, maxlen, 1
+		
+		# polarity = tf.expand_dims(self.polarity, -1) 
+		# weights = weights+polarity*10
 
 
 		ret_weights = tf.squeeze(weights, -1)
@@ -267,6 +281,9 @@ class Model(object):
 		attended = tf.reduce_sum(attended, axis=1)
 
 		return attended, ret_weights
+
+
+
 
 
 	def get_lstm_cnn(self,inputs_):
@@ -322,28 +339,60 @@ class Model(object):
 		# print("neighbor matrix of shape: ", self.u_neighbor.shape)
 		u_neighbors = tf.nn.embedding_lookup(self.u_neighbor,self.users)# batch_size, 1, 20
 		un_embed = tf.nn.embedding_lookup(self.user_embedding, u_neighbors)#batch_size, 1, 20, 300 
-		un_embed = tf.squeeze(un_embed,1)
-		pool_size = self.u_neighbor.shape[-1]
-		user = tf.keras.layers.MaxPool1D(pool_size)(un_embed)
+		un_embed = tf.squeeze(un_embed,1) #batch_size, 20, 300
+
+		# pool_size = self.u_neighbor.shape[-1]
+		# user = tf.keras.layers.MaxPool1D(pool_size)(un_embed) #batch_size, 1, 300
+
+		user = tf.nn.embedding_lookup(self.user_embedding, self.users)
+		user,self.u_atts = self.get_att_neighbors(user, un_embed)
+
+		# user = tf.nn.embedding_lookup(self.user_embedding,self.users)
 
 
-		# user = tf.nn.embedding_lookup(self.user_embedding, self.users)
-		# item = tf.nn.embedding_lookup(self.item_embedding, self.items)
+
 		p_neighbors = tf.nn.embedding_lookup(self.p_neighbor,self.items)# batch_size, 1, 20
 		pn_embed = tf.nn.embedding_lookup(self.item_embedding, p_neighbors)#batch_size, 1, 20, 300 
 		pn_embed = tf.squeeze(pn_embed,1)
-		pool_size = self.p_neighbor.shape[-1]
-		item = tf.keras.layers.MaxPool1D(pool_size)(pn_embed)
+		
+		# pool_size = self.p_neighbor.shape[-1]
+		# item = tf.keras.layers.MaxPool1D(pool_size)(pn_embed)
+
+		item = tf.nn.embedding_lookup(self.item_embedding, self.items)
+		user,self.i_atts = self.get_att_neighbors(item, pn_embed)
+
+		# item = tf.nn.embedding_lookup(self.item_embedding, self.items)
 
 
 		latent = tf.concat([user,item,user*item], axis=-1)
-		num_layers = 3
+		num_layers = 2
 		for i in range(num_layers):
 			units = self.embedding_size//(2**i)
 			print("user-item dense layer units: ", units)
 			latent = tf.keras.layers.Dense(units, 'relu')(latent)
 		latent = tf.keras.layers.Dense(self.num_class)(latent)
 		return tf.squeeze(latent, 1)
+
+
+	def get_att_neighbors(self,embedding,n_embeddings):
+
+		##embedding, batch_size, 1, embed_size
+		##n_embedding, batch_size, 20, embed_size
+		t_embed = tf.keras.layers.Dense(self.embedding_size)(embedding)
+		t_n_embed = tf.keras.layers.Dense(self.embedding_size)(n_embeddings)
+
+		weights = tf.nn.tanh(t_embed + t_n_embed) # batch_size, 20 ,embed
+
+		weights = tf.keras.layers.Dense(1)(weights) #batch_size,20,1
+
+		ret_weights = tf.squeeze(weights, -1)
+
+		atts = tf.nn.softmax(weights, axis=1) #batchsize, 20,1
+
+		attended = atts*n_embeddings
+		attended = tf.reduce_sum(attended, axis=1, keep_dims = True) #batchsize, 1, 300 
+
+		return attended, ret_weights
 
 
 	def step(self,
@@ -369,13 +418,14 @@ class Model(object):
 		input_feed[self.items] = items
 		input_feed[self.user_counts] = user_counts
 		input_feed[self.item_counts] = item_counts
+		# input_feed[self.polarity] = polarity
 		
 		if training:
 			input_feed[self.keep_prob] = 0.5
 			output_feed = [self.loss, self.updates]
 		else:
 			input_feed[self.keep_prob] = 1.0
-			output_feed = [self.predictions, self.count]
+			output_feed = [self.predictions, self.count, self.atts]
 		
 		outputs = session.run(output_feed, input_feed)
 		

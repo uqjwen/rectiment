@@ -5,6 +5,9 @@ import utils
 import os
 from keras.utils.np_utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
+
+####['x','y','l','u','p','uc','pc']  before split self.x_dat; after split: self.train_x, self.dev_x
+
 class Data_Loader():
 	def __init__(self, flags):
 		files = ['train', 'dev', 'test']
@@ -14,7 +17,7 @@ class Data_Loader():
 
 		self.batch_size = flags.batch_size
 
-		self.vec_file = flags.data_dir+'/glove.840B.300d.txt'
+		self.vec_file = flags.data_dir+'/glove.6B.300d.txt'
 		self.embed_size = flags.embed_size
 		self.num_class = flags.num_class
 
@@ -22,12 +25,16 @@ class Data_Loader():
 		pickle_file = flags.data_dir+'/data.pkl'
 
 		# x_dict = utils.my_get_dict(filenames)
-		self.get_data(filenames, pickle_file, flags.maxlen)
+		self.get_data(filenames, pickle_file, flags.ckpt_dir, flags.maxlen)
+		# self.get_pt(flags.data_dir)
 
 		self.split()
 
-		# self.get_neighbors_from_rating()
-		self.get_neighbors_from_embed(flags.ckpt_dir)
+		self.get_neighbors_from_rating()
+		# self.get_neighbors_from_embed(flags.ckpt_dir)
+
+
+		# self.get_user_item_embed(flags.ckpt_dir)
 
 	def get_emb_mat(self, filename, embed_size):
 		fr = open(filename,'r', encoding='utf-8', errors = 'ignore')
@@ -43,8 +50,24 @@ class Data_Loader():
 				embed_mat[index] = list(map(float,vector))
 		fr.close()
 		return embed_mat
+	def get_pt(self, data_dir):
+		filename = data_dir+'/atts.txt'
+		if not os.path.exists(filename):
+			print('polarity data not exists')
+			data_size = len(self.x_dat)
+			self.pt_dat = np.ones((data_size, self.maxlen))
+		else:
+			fr = open(filename,'r')
+			pt = []
+			for line in fr:
+				line = line.strip()
+				listfromline = line.split()
+				temp = list(map(float, listfromline))
+				pt.append(temp)
 
-	def get_data(self,source_files, save_file, maxlen):
+			self.pt_dat = pad_sequences(pt, self.maxlen, padding = 'post')
+
+	def get_data(self,source_files, save_file, ckpt_dir, maxlen):
 		names = self.__dict__
 		dict_data = ['x_dict', 'u_dict', 'p_dict', 'u_freq', 'p_freq']
 		dat_data = ['x','y','l','u','p','uc','pc']
@@ -86,6 +109,7 @@ class Data_Loader():
 			for item in dict_data:
 				names[item] = pickle_data[item]
 			self.embed_mat = pickle_data['embed_mat']
+			# self.embed_mat = np.load(ckpt_dir+'/word.npy')
 
 		lens = [len(x) for x in self.x_dat]
 		print("mean: ",np.mean(lens), 'max: ', np.max(lens))
@@ -137,6 +161,10 @@ class Data_Loader():
 
 		res_dat = [names['train_'+dat][begin:end]  for dat in dat_data]
 		return res_dat
+	def train_dat(self):
+		names = self.__dict__
+		dat_data = ['x','y','l','u','p','uc','pc']
+		return [names['train_'+dat] for dat in dat_data]
 
 	def val(self):
 		names = self.__dict__
@@ -148,9 +176,10 @@ class Data_Loader():
 	def get_neighbors_from_rating(self,n_neighbors=20):
 		self.u_dat
 		self.p_dat 
-		self.y_dat 
+		self.y_dat
+		user,item,label = self.train_u, self.train_p, self.train_y 
 		up_mat = np.zeros((self.num_user, self.num_item))
-		for u,p,r in zip(self.u_dat, self.p_dat, self.y_dat):
+		for u,p,r in zip(user,item,label):
 			r = np.argmax(r)
 			up_mat[u,p] = r 
 		uu_mat = self.get_nn_mat(up_mat)
@@ -163,8 +192,8 @@ class Data_Loader():
 		return np.dot(mat,mat.T)
 
 	def get_neighbors_from_embed(self, ckpt_dir, n_neighbors=20):
-		u_mat = np.load('imdb_ckpt/user.npy')
-		p_mat = np.load('imdb_ckpt/item.npy')
+		u_mat = np.load(ckpt_dir+'/user.npy')
+		p_mat = np.load(ckpt_dir+'/item.npy')
 
 		uu_mat = self.get_nn_mat(u_mat)
 		pp_mat = self.get_nn_mat(p_mat)
@@ -172,7 +201,9 @@ class Data_Loader():
 		self.u_neighbors = np.argsort(uu_mat,axis=-1)[:,-n_neighbors:]
 		self.p_neighbors = np.argsort(pp_mat,axis=-1)[:,-n_neighbors:]
 
-		
+	# def get_user_item_embed(self, ckpt_dir):
+	# 	self.user_embed = np.load(ckpt_dir+'/user.npy')
+	# 	self.item_embed = np.load(ckpt_dir+'/item.npy')
 
 
 if __name__ == '__main__':
