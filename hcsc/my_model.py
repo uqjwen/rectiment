@@ -341,11 +341,11 @@ class Model(object):
 		un_embed = tf.nn.embedding_lookup(self.user_embedding, u_neighbors)#batch_size, 1, 20, 300 
 		un_embed = tf.squeeze(un_embed,1) #batch_size, 20, 300
 
-		# pool_size = self.u_neighbor.shape[-1]
-		# user = tf.keras.layers.MaxPool1D(pool_size)(un_embed) #batch_size, 1, 300
+		pool_size = self.u_neighbor.shape[-1]
+		user = tf.keras.layers.MaxPool1D(pool_size)(un_embed) #batch_size, 1, 300
 
-		user = tf.nn.embedding_lookup(self.user_embedding, self.users)
-		user,self.u_atts = self.get_att_neighbors(user, un_embed)
+		# user = tf.nn.embedding_lookup(self.user_embedding, self.users)
+		# user,self.u_atts = self.get_att_neighbors(user, un_embed)
 
 		# user = tf.nn.embedding_lookup(self.user_embedding,self.users)
 
@@ -355,11 +355,11 @@ class Model(object):
 		pn_embed = tf.nn.embedding_lookup(self.item_embedding, p_neighbors)#batch_size, 1, 20, 300 
 		pn_embed = tf.squeeze(pn_embed,1)
 		
-		# pool_size = self.p_neighbor.shape[-1]
-		# item = tf.keras.layers.MaxPool1D(pool_size)(pn_embed)
+		pool_size = self.p_neighbor.shape[-1]
+		item = tf.keras.layers.MaxPool1D(pool_size)(pn_embed)
 
-		item = tf.nn.embedding_lookup(self.item_embedding, self.items)
-		user,self.i_atts = self.get_att_neighbors(item, pn_embed)
+		# item = tf.nn.embedding_lookup(self.item_embedding, self.items)
+		# user,self.i_atts = self.get_att_neighbors(item, pn_embed)
 
 		# item = tf.nn.embedding_lookup(self.item_embedding, self.items)
 

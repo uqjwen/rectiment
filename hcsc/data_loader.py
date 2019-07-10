@@ -30,8 +30,8 @@ class Data_Loader():
 
 		self.split()
 
-		self.get_neighbors_from_rating()
-		# self.get_neighbors_from_embed(flags.ckpt_dir)
+		# self.get_neighbors_from_rating()
+		self.get_neighbors_from_embed(flags.ckpt_dir)
 
 
 		# self.get_user_item_embed(flags.ckpt_dir)
