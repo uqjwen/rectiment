@@ -22,7 +22,7 @@ class Data_Loader():
 		pickle_file = flags.data_dir+'/data.pkl'
 
 		# x_dict = utils.my_get_dict(filenames)
-		self.get_data(filenames, pickle_file)
+		self.get_data(filenames, pickle_file, flags.maxlen)
 
 		self.split()
 
@@ -44,7 +44,7 @@ class Data_Loader():
 		fr.close()
 		return embed_mat
 
-	def get_data(self,source_files, save_file):
+	def get_data(self,source_files, save_file, maxlen):
 		names = self.__dict__
 		dict_data = ['x_dict', 'u_dict', 'p_dict', 'u_freq', 'p_freq']
 		dat_data = ['x','y','l','u','p','uc','pc']
@@ -89,8 +89,9 @@ class Data_Loader():
 
 		lens = [len(x) for x in self.x_dat]
 		print("mean: ",np.mean(lens), 'max: ', np.max(lens))
-		self.maxlen = np.max(lens)
-		self.maxlen = 500
+		# self.maxlen = np.max(lens)
+		# self.maxlen = 500
+		self.maxlen = maxlen
 		self.x_dat = pad_sequences(self.x_dat, self.maxlen, padding = 'post')
 		self.l_dat[self.l_dat > self.maxlen] = self.maxlen
 
@@ -162,8 +163,8 @@ class Data_Loader():
 		return np.dot(mat,mat.T)
 
 	def get_neighbors_from_embed(self, ckpt_dir, n_neighbors=20):
-		u_mat = np.load(ckpt_dir+'/user.npy')
-		p_mat = np.load(ckpt_dir+'/item.npy')
+		u_mat = np.load('imdb_ckpt/user.npy')
+		p_mat = np.load('imdb_ckpt/item.npy')
 
 		uu_mat = self.get_nn_mat(u_mat)
 		pp_mat = self.get_nn_mat(p_mat)

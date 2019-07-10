@@ -32,11 +32,14 @@ def train(sess,model,data_loader, flags):
 			sys.stdout.write('\repoch:{}, batch:{}/{}, loss:{}'.format(i,b,batches,loss))
 			sys.stdout.flush()
 			# break
-		acc = eval(sess, model, data_loader, flags)
-		print("acc: ", acc)
-		if acc>best_acc:
-			best_acc = acc 
-			saver.save(sess, flags.ckpt_dir+'/model.ckpt', global_step = i)
+			trained_batches = i*batches+b
+			if trained_batches!=0 and trained_batches%200==0:
+				acc = eval(sess, model, data_loader, flags)
+				print("acc: ", acc)
+				if acc>best_acc:
+					best_acc = acc 
+					saver.save(sess, flags.ckpt_dir+'/model.ckpt', global_step = trained_batches)
+					np.save(flags.ckpt_dir+'/res.npy',acc)
 
 def test(sess, model, data_loader, flags):
 	saver = tf.train.Saver(max_to_keep = 1)
@@ -110,10 +113,11 @@ def main():
 	tf.flags.DEFINE_string('domain','imdb','domain of the dataset')
 	tf.flags.DEFINE_string('base_model', 'cnn', 'base model')
 	tf.flags.DEFINE_integer('embed_size',300, 'embedding size')
-	tf.flags.DEFINE_integer('epoch', 100, 'epochs for training')
+	tf.flags.DEFINE_integer('epoch', 10, 'epochs for training')
 	tf.flags.DEFINE_integer('batch_size', 128, 'mini batchsize for training')
+	tf.flags.DEFINE_integer('maxlen',100, 'maximum len of sequences')
 	tf.flags.DEFINE_string('train_test', 'train', 'training or test')
-	tf.flags.DEFINE_string('ckpt_dir',flags.domain+'_ckpt', 'dir of checkpoint')
+	tf.flags.DEFINE_string('ckpt_dir',flags.domain+'_ckpt_'+str(flags.maxlen), 'dir of checkpoint')
 	tf.flags.DEFINE_string('data_dir', flags.domain, 'dir of dataset')
 	num_class = 10 if flags.domain == 'imdb' else 5
 	tf.flags.DEFINE_integer('num_class', num_class, 'number of target class')

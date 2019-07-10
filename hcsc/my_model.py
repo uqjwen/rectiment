@@ -58,12 +58,19 @@ class Model(object):
 
 		if base_model == 'cnn':
 			encode = self.get_cnn_stack(inputs_embedding)
+			h = reduce_max(encode, axis=1)
 		elif base_model == 'rnn_cnn':
 			encode = self.get_lstm_cnn(inputs_embedding)
+			h = reduce_max(encode, axis=1)
+		elif base_model == 'att_cnn':
+			encode = self.get_cnn_stack(inputs_embedding)
+			encode, self.atts = self.get_att_cnn(encode)
+			h = encode
+
 
 
 		print("encode shape: ", encode.shape)
-		h = tf.reduce_max(encode, axis=1)
+		# h = tf.reduce_max(encode, axis=1)
 
 		print("encode reduce_max: ", h.shape)
 		W0 = tf.get_variable("W0", [embedding_size, num_class], initializer=xavier_initializer())
@@ -81,7 +88,7 @@ class Model(object):
 
 
 
-		self.hcsc_scores, self.hcsc_loss = self.get_hcsc_loss(encode, embedding_size)
+		# self.hcsc_scores, self.hcsc_loss = self.get_hcsc_loss(encode, embedding_size)
 
 
 
@@ -89,9 +96,9 @@ class Model(object):
 
 		
 		
-		self.predictions = tf.argmax(self.hcsc_scores, 1)
-		self.updates = tf.train.AdadeltaOptimizer(1.0,0.95,1e-6).minimize(self.hcsc_loss)		
-
+		self.predictions = tf.argmax(scores, 1)
+		self.updates = tf.train.AdadeltaOptimizer(1.0,0.95,1e-6).minimize(self.loss)		
+		self.updates = tf.train.AdamOptimizer(learning_rate = 0.001).minimize(self.loss)
 		self.count = tf.cast(tf.equal(self.predictions, tf.argmax(self.targets, 1)), 'float')
 
 
@@ -233,6 +240,34 @@ class Model(object):
 		attended = tf.reduce_sum(attended, axis)
 
 		return attended, ret_weights
+
+	def get_att_cnn(self, inputs_): #batch_size, maxlen, embed_size
+		users = tf.nn.embedding_lookup(self.user_embedding, self.users)
+		items = tf.nn.embedding_lookup(self.item_embedding, self.items) #batch_size 1 embed_size
+
+		ui = tf.concat([users, items], axis=-1) # batch_size 1 2*embed_size
+
+		ui_trans = tf.keras.layers.Dense(self.embedding_size)(ui)  #batch_size 1 embed_size
+
+		input_trans = tf.keras.layers.Dense(self.embedding_size)(inputs_) #batch_size maxlen embed_size 
+
+
+		weights = tf.nn.tanh(ui_trans+input_trans)
+
+
+
+		weights = tf.keras.layers.Dense(1)(weights) #batch_size, maxlen, 1
+
+
+		ret_weights = tf.squeeze(weights, -1)
+
+		weights = tf.nn.softmax(weights, axis=1)
+		attended = weights*inputs_ 
+
+		attended = tf.reduce_sum(attended, axis=1)
+
+		return attended, ret_weights
+
 
 	def get_lstm_cnn(self,inputs_):
 		fw_cell = tf.nn.rnn_cell.LSTMCell(self.embedding_size/4)
