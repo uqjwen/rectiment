@@ -122,9 +122,8 @@ class Data_Loader():
 		self.num_item 	= len(self.p_dict)
 
 
-		if flags.co_variant:
-			trans_x = Trans_X(self.x_dat, self.y_dat, self.p_dat,self.u_dat, self.num_user, self.num_item, data_dir,flags.domain)
-			self.s_dat, self.n_dat = trans_x.sent, trans_x.res
+		trans_x = Trans_X(self.x_dat, self.y_dat, self.p_dat,self.u_dat, self.num_user, self.num_item, data_dir,flags.domain)
+		self.s_dat, self.n_dat = trans_x.sent, trans_x.res
 
 
 

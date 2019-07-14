@@ -210,8 +210,8 @@ def main():
 	tf.flags.DEFINE_integer('batch_size', 128, 'mini batchsize for training')
 	tf.flags.DEFINE_integer('x_neighbors',5,'number of collaborative x_dat')
 	tf.flags.DEFINE_string('train_test', 'train', 'training or test')
-	tf.flags.DEFINE_boolean('co_variant',True,'including collaborative sentences')
-	tf.flags.DEFINE_boolean('ui_variant', True, 'including user-item interaction')
+	tf.flags.DEFINE_integer('co_variant',1,'including collaborative sentences')
+	tf.flags.DEFINE_integer('ui_variant', 1, 'including user-item interaction')
 	tf.flags.DEFINE_string('orient','acc','acc or rmse, which to be optimized')
 	
 	tf.flags.DEFINE_string('data_dir', my_dir+flags.domain, 'dir of dataset')
@@ -220,8 +220,8 @@ def main():
 	maxlen = 500 if flags.domain == 'imdb' else 300
 	ckpt_dir = my_dir+flags.domain+'_ckpt_'+flags.orient
 	variant = ''
-	variant += '_co' if flags.co_variant == False else ''
-	variant += '_ui' if flags.ui_variant == False else ''
+	variant += '_co' if flags.co_variant == 0 else ''
+	variant += '_ui' if flags.ui_variant == 0 else ''
 	variant += flags.base_model if flags.base_model != 'att_cnn' else ''
 	ckpt_dir += variant
 
@@ -230,6 +230,10 @@ def main():
 	tf.flags.DEFINE_integer('num_class', num_class, 'number of target class')
 
 	flags(sys.argv)
+
+	print('ckpt_dir', flags.ckpt_dir, flags.co_variant, flags.ui_variant)
+
+
 	data_loader = Data_Loader(flags)
 
 
