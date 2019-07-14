@@ -1,0 +1,14 @@
+train imdb rmse
+train with 0.001 learning rate, and then train with 0.0001: with x_neighbor_item.npy
+
+and then trained with x_neighbor_user.npy 
+
+
+
+
+
+maxlen:
+imdb:500
+yelp:300
+
+
