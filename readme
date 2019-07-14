@@ -4,7 +4,8 @@ train with 0.001 learning rate, and then train with 0.0001: with x_neighbor_item
 and then trained with x_neighbor_user.npy 
 
 
-
+train yelp rmse, acc
+train with 0.001 learning rate, and then train with 0.0001 
 
 
 maxlen:

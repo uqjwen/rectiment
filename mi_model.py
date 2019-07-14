@@ -73,7 +73,6 @@ class Model(object):
 		# print("encode shape: ", encode.shape)
 		# h = tf.reduce_max(encode, axis=1)
 
-		print("encode reduce_max: ", h.shape)
 
 		# temp = tf.keras.layers.Dense(embedding_size//4, 'relu')(h)
 		# scores = tf.keras.layers.Dense(num_class)(h)
@@ -227,7 +226,6 @@ class Model(object):
 													 sequence_length=self.input_len, dtype=tf.float32)
 		encode1 = tf.concat(outputs, 2)
 
-		print('encode1 of shape: ', encode1.shape)
 			
 			
 		kernel_sizes = [3,5,7]
@@ -300,7 +298,6 @@ class Model(object):
 		num_layers = 2
 		for i in range(num_layers):
 			units = self.embedding_size//(2**i)
-			print("user-item dense layer units: ", units)
 			latent = tf.keras.layers.Dense(units, 'relu')(latent)
 		latent = tf.keras.layers.Dense(self.num_class)(latent)
 		return tf.squeeze(latent, 1)

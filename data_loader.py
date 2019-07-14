@@ -109,7 +109,6 @@ class Data_Loader():
 			# self.embed_mat = np.load(ckpt_dir+'/word.npy')
 
 		lens = [len(x) for x in self.x_dat]
-		print("mean: ",np.mean(lens), 'max: ', np.max(lens))
 		# self.maxlen = np.max(lens)
 		# self.maxlen = 500
 
@@ -122,7 +121,6 @@ class Data_Loader():
 		self.num_user 	= len(self.u_dict)
 		self.num_item 	= len(self.p_dict)
 
-		print("num_user: ", self.num_user, "num_item: ", self.num_item)
 
 		if flags.co_variant:
 			trans_x = Trans_X(self.x_dat, self.y_dat, self.p_dat,self.u_dat, self.num_user, self.num_item, data_dir,flags.domain)

@@ -1,8 +1,6 @@
 import os 
 import tensorflow as tf 
 import numpy as np 
-import hcsc
-import my_model
 import mi_model
 import utils
 from data_loader import Data_Loader 
@@ -76,7 +74,7 @@ def train(sess,model,data_loader, flags):
 				if flags.orient == 'acc':
 					if res>best_acc:
 						best_acc = res
-						saver.save(sess, flags.ckpt_dir+'/model.ckpt', global_step  = trained_batches)
+						# saver.save(sess, flags.ckpt_dir+'/model.ckpt', global_step  = trained_batches)
 				else:
 					if res<best_rmse:
 						best_rmse = res
@@ -201,12 +199,13 @@ def test(sess, model, data_loader, flags):
 
 
 def main():
+	my_dir = '/home/wenjh/data/'
 	flags = tf.flags.FLAGS 
 
 	tf.flags.DEFINE_string('domain','yelp','domain of the dataset')
 	tf.flags.DEFINE_string('base_model', 'att_cnn', 'base model')
 	tf.flags.DEFINE_integer('embed_size',300, 'embedding size')
-	tf.flags.DEFINE_integer('maxlen',300, 'maximum length of sequences')
+	
 	tf.flags.DEFINE_integer('epoch', 5, 'epochs for training')
 	tf.flags.DEFINE_integer('batch_size', 128, 'mini batchsize for training')
 	tf.flags.DEFINE_integer('x_neighbors',5,'number of collaborative x_dat')
@@ -214,10 +213,20 @@ def main():
 	tf.flags.DEFINE_boolean('co_variant',True,'including collaborative sentences')
 	tf.flags.DEFINE_boolean('ui_variant', True, 'including user-item interaction')
 	tf.flags.DEFINE_string('orient','acc','acc or rmse, which to be optimized')
-	tf.flags.DEFINE_string('ckpt_dir',flags.domain+'_ckpt'+'_'+flags.orient, 'dir of checkpoint')
-	tf.flags.DEFINE_string('data_dir', '/home/wenjh/data/'+flags.domain, 'dir of dataset')
+	
+	tf.flags.DEFINE_string('data_dir', my_dir+flags.domain, 'dir of dataset')
 
 	num_class = 10 if flags.domain == 'imdb' else 5
+	maxlen = 500 if flags.domain == 'imdb' else 300
+	ckpt_dir = my_dir+flags.domain+'_ckpt_'+flags.orient
+	variant = ''
+	variant += '_co' if flags.co_variant == False else ''
+	variant += '_ui' if flags.ui_variant == False else ''
+	variant += flags.base_model if flags.base_model != 'att_cnn' else ''
+	ckpt_dir += variant
+
+	tf.flags.DEFINE_string('ckpt_dir',ckpt_dir, 'dir of checkpoint')
+	tf.flags.DEFINE_integer('maxlen',maxlen, 'maximum length of sequences')
 	tf.flags.DEFINE_integer('num_class', num_class, 'number of target class')
 
 	flags(sys.argv)
