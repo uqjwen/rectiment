@@ -60,9 +60,10 @@ class Model(object):
 		if self.base_model == 'cnn':
 			encode = self.get_cnn_stack(inputs_embedding)
 			h = reduce_max(encode, axis=1)
-		elif self.base_model == 'rnn_cnn':
-			encode = self.get_lstm_cnn(inputs_embedding)
-			h = reduce_max(encode, axis=1)
+		elif self.base_model == 'hcsc':
+			encode = self.get_hcsc(inputs_embedding)
+			h = encode
+			# h = reduce_max(encode, axis=1)
 		elif self.base_model == 'att_cnn':
 			encode_1 = self.get_cnn_stack(inputs_embedding)
 			# encode_2 = tf.reduce_max(encode_1,1)
@@ -216,7 +217,7 @@ class Model(object):
 
 
 
-	def get_lstm_cnn(self,inputs_):
+	def get_hcsc(self,inputs_):
 		fw_cell = tf.nn.rnn_cell.LSTMCell(self.embedding_size/4)
 		bw_cell = tf.nn.rnn_cell.LSTMCell(self.embedding_size/4)
 		fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=self.keep_prob)
@@ -237,7 +238,76 @@ class Model(object):
 			hidden = tf.nn.dropout(tf.nn.relu(conv),self.keep_prob)
 			outputs.append(hidden)
 		encode2 = tf.concat(outputs, axis=-1)
-		return tf.concat([encode1, encode2], axis=-1)
+
+		encode = tf.concat([encode1, encode2], axis=-1)
+
+		# return tf.reduce_max(encode, axis=1)
+
+		user_embed = tf.nn.embedding_lookup(self.user_embedding, self.users)
+		item_embed = tf.nn.embedding_lookup(self.item_embedding, self.items)
+
+
+		vu_spec, self.a_ud = self.reduce_spec(encode, user_embed, 1, self.embedding_size, "user")
+		vp_spec, self.a_pd = self.reduce_spec(encode, item_embed, 1, self.embedding_size, "prod")
+
+
+
+		mean = tf.reduce_mean(encode, 1)
+		
+		user_mean = fc_layer(mean, self.embedding_size, activation_fn=None)
+		vu_share_weights = tf.matmul(user_mean, tf.transpose(self.user_embedding, [1,0]))
+		vu_share_weights = tf.expand_dims(tf.nn.softmax(vu_share_weights), -1)
+		vu_share = tf.multiply(vu_share_weights, self.user_embedding)
+		vu_share = tf.expand_dims(tf.reduce_sum(vu_share, 1), -2)
+		vu_share, self.a_us = self.reduce_spec(encode, vu_share, 1, self.embedding_size, "user1")
+		
+		prod_mean = fc_layer(mean, self.embedding_size, activation_fn=None)
+		vp_share_weights = tf.matmul(prod_mean, tf.transpose(self.item_embedding, [1,0]))
+		vp_share_weights = tf.expand_dims(tf.nn.softmax(vp_share_weights), -1)
+		vp_share = tf.multiply(vp_share_weights, self.item_embedding)
+		vp_share = tf.expand_dims(tf.reduce_sum(vp_share, 1), -2)
+		vp_share, self.a_ps = self.reduce_spec(encode, vp_share, 1, self.embedding_size, "prod1")
+
+		vp = 0.5*vp_spec + 0.5*vp_share
+		vu = 0.5*vu_spec + 0.5*vu_share
+
+
+		Wg = tf.get_variable("Wg", [self.embedding_size*2, self.embedding_size], initializer=xavier_initializer())
+		bg = tf.Variable(tf.constant(0.0, shape=[self.embedding_size]))
+		h0 = tf.concat([vu, vp], -1)
+		gate = tf.sigmoid(tf.nn.xw_plus_b(h0, Wg, bg))
+		self.gup = tf.reduce_mean(gate, -1)
+		h = gate * vu + (1-gate) * vp
+
+		return h
+
+		# return tf.concat([encode1, encode2], axis=-1)
+
+
+	def reduce_spec(self, x, y, axis, size, name):
+		X = tf.get_variable("X" + name, shape=[size, size], initializer=xavier_initializer())
+		Y = tf.get_variable("Y" + name, shape=[size, size], initializer=xavier_initializer())
+		b = tf.Variable(tf.zeros([size]))
+		z = tf.get_variable("z" + name, shape=[size], initializer=xavier_initializer())
+		
+		sem = tf.tensordot(x, X, 1)
+		sem.set_shape(x.shape)
+		
+		user = tf.tensordot(y, Y, 1)
+		
+		weights = tf.nn.tanh(sem + user + b)
+		
+		weights = tf.tensordot(weights, z, 1)
+		weights.set_shape(x.shape[:-1])
+		
+		ret_weights = weights
+		weights = tf.nn.softmax(weights)
+		weights = tf.expand_dims(weights, -1)
+		
+		attended = tf.multiply(x, weights)
+		attended = tf.reduce_sum(attended, axis)
+
+		return attended, ret_weights
 
 
 	def get_cnn(self,inputs_):

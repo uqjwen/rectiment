@@ -222,7 +222,7 @@ def main():
 	variant = ''
 	variant += '_co' if flags.co_variant == 0 else ''
 	variant += '_ui' if flags.ui_variant == 0 else ''
-	variant += flags.base_model if flags.base_model != 'att_cnn' else ''
+	variant += "_"+flags.base_model if flags.base_model != 'att_cnn' else ''
 	ckpt_dir += variant
 
 	tf.flags.DEFINE_string('ckpt_dir',ckpt_dir, 'dir of checkpoint')
