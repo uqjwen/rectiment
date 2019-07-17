@@ -65,6 +65,11 @@ class Data_Loader():
 		names = self.__dict__
 		dict_data = ['x_dict', 'u_dict', 'p_dict']
 		dat_data = ['x','y','l','u','p']
+		#x_dat: input sentence of shape [batch_size, maxlen] for training
+		#y_dat: sentiment labels of shape [batch_size, num_class] for training
+		#l_dat: input sentence length before pad_sequence [batch_size,] for training
+		#u_dat: input user id of shape [batch_size, 1] for training
+		#p_dat: input item(prod) id of shape [batch_size,1] for training 
 		files = ['train', 'dev', 'test']
 		source_files = [data_dir+'/'+file+'.txt' for file in files]
 		save_file = data_dir+'/data.pkl'
