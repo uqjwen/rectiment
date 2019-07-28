@@ -60,8 +60,9 @@ def train(sess,model,data_loader, flags):
 			trained_batches = i*batches+b
 			sys.stdout.write('\repoch:{}, batch:{}/{}, trained_batches:{}, loss:{}'.format(i,b,batches,trained_batches, loss))
 			sys.stdout.flush()
-			if trained_batches!=0 and trained_batches%10==0:
-				res, another = eval(sess, model, data_loader, flags)
+			if trained_batches!=0 and trained_batches%1==0:
+				# res, another = eval(sess, model, data_loader, flags)
+				res,another = 0,1
 				res = round(res,5)
 				loss = round(loss,5)
 				another = round(another,5)
@@ -70,11 +71,11 @@ def train(sess,model,data_loader, flags):
 				fr_time.write(str(time_span)+'\n')
 
 				res_loss.append([loss, res])
-				print("res", res)
+				print(" res", res)
 				if flags.orient == 'acc':
 					if res>best_acc:
 						best_acc = res
-						saver.save(sess, flags.ckpt_dir+'/model.ckpt', global_step  = trained_batches)
+						# saver.save(sess, flags.ckpt_dir+'/model.ckpt', global_step  = trained_batches)
 				else:
 					if res<best_rmse:
 						best_rmse = res

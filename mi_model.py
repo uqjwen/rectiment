@@ -57,9 +57,11 @@ class Model(object):
 
 		inputs_embedding = tf.nn.embedding_lookup(self.embedding, self.inputs)
 
+		print('base_model: ', self.base_model)
+
 		if self.base_model == 'cnn':
 			encode = self.get_cnn_stack(inputs_embedding)
-			h = reduce_max(encode, axis=1)
+			h = tf.reduce_max(encode, axis=1)
 		elif self.base_model == 'hcsc':
 			encode = self.get_hcsc(inputs_embedding)
 			h = encode
@@ -144,7 +146,7 @@ class Model(object):
 		
 		
 		self.predictions = tf.argmax(scores, 1)
-		self.updates = tf.train.AdamOptimizer(learning_rate = 0.0001).minimize(self.loss)
+		self.updates = tf.train.AdamOptimizer(learning_rate = 0.001).minimize(self.loss)
 
 		# self.hcsc_scores, self.hcsc_loss = self.get_hcsc_loss(encode, embedding_size)
 		# self.predictions = tf.argmax(self.hcsc_scores, 1)

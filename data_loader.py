@@ -126,6 +126,7 @@ class Data_Loader():
 		self.num_user 	= len(self.u_dict)
 		self.num_item 	= len(self.p_dict)
 
+		print('num_user: ', self.num_user, 'num_item', self.num_item)
 
 		trans_x = Trans_X(self.x_dat, self.y_dat, self.p_dat,self.u_dat, self.num_user, self.num_item, data_dir,flags.domain)
 		self.s_dat, self.n_dat = trans_x.sent, trans_x.res
